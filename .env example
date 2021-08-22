@@ -1,0 +1,5 @@
+# Example .env file 
+MQTT_URL=mqtts://url
+MQTT_PORT=8883
+MQTT_USER=username
+MQTT_PASS=password
