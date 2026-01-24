@@ -21,6 +21,8 @@ client.on('message',async function (topic, message) {
     // message is Buffer
     let msg = message.toString()
     if (topic === "hackeriet/ding") {
+        // matches alphanums until first instance of <, which is the delimiter for the encrypted IP
+        // replaces all non ascii chars to prevent a remote code execution
         let tts = msg.match(/^[a-zA-Z0-9\-\. ]+\</g).join('');
         let files = fs.readdirSync('audio');
         if (files.length) {
