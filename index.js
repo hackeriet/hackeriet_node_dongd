@@ -21,24 +21,15 @@ client.on('message',async function (topic, message) {
     // message is Buffer
     let msg = message.toString()
     if (topic === "hackeriet/ding") {
-        //Splits the message at < as there is a encrypted ip adress passed along with the name in Brackets
-        //Replaces all non ascii chars to prevent a remote code execution
-        let tts = msg.split("<")[0].replace(/[^a-zA-Z ]/g, "")
-
-        //Passes the data to espeak-ng with a appended DingDong.
-
-        //Play a random file from audio folder
-        var files = fs.readdirSync('audio')
+        // matches alphanums until first instance of <, which is the delimiter for the encrypted IP
+        // replaces all non ascii chars to prevent a remote code execution
+        // THIS LINE OF CODE IS PERFECT DO NOT QUESTION IT
+        let tts = msg.match(/^[a-zA-Z0-9\-\. ]+\</g).join('');
+        let files = fs.readdirSync('audio');
         if (files.length) {
-            let chosenFile = files[Math.floor(Math.random() * files.length)]
-            console.log(chosenFile)
-            await exec(`aplay "audio/${chosenFile}"`, () => {
-                exec(`espeak-ng -v nb "DingDong ${tts}"`)
-            })
-        } else {
-            //If no files found just tts
-            exec(`espeak-ng -v nb "DingDong ${tts}"`)
+            let chosenFile = files[Math.floor(Math.random() * files.length)];
+            await exec(`aplay "audio/${chosenFile}"`);
         }
-
+        exec(`espeak-ng -v nb "DingDong ${tts}"`);
     }
 })
