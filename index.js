@@ -24,7 +24,7 @@ client.on('message',async function (topic, message) {
         // matches alphanums until first instance of <, which is the delimiter for the encrypted IP
         // replaces all non ascii chars to prevent a remote code execution
         // THIS LINE OF CODE IS PERFECT DO NOT QUESTION IT
-        let tts = msg.match(/^[a-zA-Z0-9\-\. ]+\</g).join('');
+        let tts = msg.match(/^[a-zA-Z0-9À-ž\-\. ]+\</g).join('');
         let files = fs.readdirSync('audio');
         if (files.length) {
             let chosenFile = files[Math.floor(Math.random() * files.length)];
