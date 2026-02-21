@@ -2,7 +2,6 @@
 require('dotenv').config();
 
 
-let receivedPersistentSpaceStatus = false;
 const mqtt = require('mqtt')
 const { exec } = require("child_process");
 //Using FS to find a random sound clip to play
@@ -14,20 +13,24 @@ client.on('connect', function () {
     console.log("Connected")
     client.subscribe('hackeriet/ding', function (err) {
         if (!err) {
-            console.log("Subscribed")
+            console.log("Subscribed to doorbell")
         }
     })
     client.subscribe('hackeriet/space_state', function (err) {
         if (!err) {
-            console.log("Subscribed")
+            console.log("Subscribed to space state")
         }
     })
 })
 
+let receivedPersistentSpaceStatus = false;
 client.on('message',async function (topic, message) {
-    // message is Buffer
     let msg = message.toString()
+
+    // Play sound effects for space state changes
     if (topic === "hackeriet/space_state") {
+        // The space status is persisted to MQTT, we will receive a copy on
+        // subscribe of the persisted state which we need to ignore
         if (!receivedPersistentSpaceStatus) {
             receivedPersistentSpaceStatus = true;
             return;
@@ -38,26 +41,21 @@ client.on('message',async function (topic, message) {
             await exec(`aplay "sfx/space-close.wav"`)
         }
     }
+
+    // Announce knocks on the doorbell
     if (topic === "hackeriet/ding") {
-        //Splits the message at < as there is a encrypted ip adress passed along with the name in Brackets
-        //Replaces all non ascii chars to prevent a remote code execution
         let tts = msg.split("<")[0].replace(/[^a-zA-Z ]/g, "")
+        tts = `DingDong ${tts}`;
 
-        //Passes the data to espeak-ng with a appended DingDong.
-
-        //Play a random file from audio folder
-        var files = fs.readdirSync('audio')
         await exec('amixer sset PCM 100%')
+
+        // Play a random file from audio folder, if we have any
+        var files = fs.readdirSync('audio')
         if (files.length) {
             let chosenFile = files[Math.floor(Math.random() * files.length)]
-            console.log(chosenFile)
-            await exec(`aplay "audio/${chosenFile}"`, () => {
-                exec(`espeak-ng -v nb "DingDong ${tts}"`)
-            })
-        } else {
-            //If no files found just tts
-            exec(`espeak-ng -v nb "DingDong ${tts}"`)
+            await execFile("aplay", [`audio/${chosenFile}`])
         }
+        await execFile("espeak-ng", ["-v", "nb", tts])
 
     }
 })
