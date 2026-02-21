@@ -60,7 +60,7 @@ client.on('message', async function (topic, message) {
         // will play overlapped. The callback will be played regardless of
         // whether the `aplay` was successful or not.
         await execFile("aplay", [doorBellFile], () => {
-            await execFile("espeak-ng", ["-v", "nb", "--", tts])
+            execFile("espeak-ng", ["-v", "nb", "--", tts])
         })
 
     }
