@@ -3,7 +3,7 @@ require('dotenv').config();
 
 
 const mqtt = require('mqtt')
-const { exec } = require("child_process");
+const { exec, execFile } = require("child_process");
 //Using FS to find a random sound clip to play
 const fs = require('fs');
 //Start a new client connection
@@ -29,6 +29,7 @@ client.on('message',async function (topic, message) {
 
     // Play sound effects for space state changes
     if (topic === "hackeriet/space_state") {
+	console.log("Received space state change");
         // The space status is persisted to MQTT, we will receive a copy on
         // subscribe of the persisted state which we need to ignore
         if (!receivedPersistentSpaceStatus) {
@@ -44,8 +45,8 @@ client.on('message',async function (topic, message) {
 
     // Announce knocks on the doorbell
     if (topic === "hackeriet/ding") {
-        let tts = msg.split("<")[0].replace(/[^a-zA-Z ]/g, "")
-        tts = `DingDong ${tts}`;
+	console.log("Received doorbell ding");
+        let tts = `DingDong ${msg}`;
 
         await exec('amixer sset PCM 100%')
 
@@ -55,7 +56,7 @@ client.on('message',async function (topic, message) {
             let chosenFile = files[Math.floor(Math.random() * files.length)]
             await execFile("aplay", [`audio/${chosenFile}`])
         }
-        await execFile("espeak-ng", ["-v", "nb", tts])
+        await execFile("espeak-ng", ["-v", "nb", "--", tts])
 
     }
 })
