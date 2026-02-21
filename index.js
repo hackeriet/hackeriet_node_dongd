@@ -24,7 +24,7 @@ client.on('connect', function () {
 })
 
 let receivedPersistentSpaceStatus = false;
-client.on('message',async function (topic, message) {
+client.on('message', async function (topic, message) {
     let msg = message.toString()
 
     // Play sound effects for space state changes
@@ -51,12 +51,17 @@ client.on('message',async function (topic, message) {
         await exec('amixer sset PCM 100%')
 
         // Play a random file from audio folder, if we have any
+        let doorBellFile = "/dev/null";
         var files = fs.readdirSync('audio')
         if (files.length) {
-            let chosenFile = files[Math.floor(Math.random() * files.length)]
-            await execFile("aplay", [`audio/${chosenFile}`])
+            doorBellFile = "audio/" + files[Math.floor(Math.random() * files.length)]
         }
-        await execFile("espeak-ng", ["-v", "nb", "--", tts])
+        // Chaining these through callbacks is required, as otherwise the sounds
+        // will play overlapped. The callback will be played regardless of
+        // whether the `aplay` was successful or not.
+        await execFile("aplay", [doorBellFile], () => {
+            await execFile("espeak-ng", ["-v", "nb", "--", tts])
+        })
 
     }
 })
