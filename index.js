@@ -1,6 +1,8 @@
 //dotenv reads variables from a .env file and put them into process.env
 require('dotenv').config();
 
+
+let receivedPersistentSpaceStatus = false;
 const mqtt = require('mqtt')
 const { exec } = require("child_process");
 //Using FS to find a random sound clip to play
@@ -15,21 +17,47 @@ client.on('connect', function () {
             console.log("Subscribed")
         }
     })
+    client.subscribe('hackeriet/space_state', function (err) {
+        if (!err) {
+            console.log("Subscribed")
+        }
+    })
 })
 
 client.on('message',async function (topic, message) {
     // message is Buffer
     let msg = message.toString()
-    if (topic === "hackeriet/ding") {
-        // matches alphanums until first instance of <, which is the delimiter for the encrypted IP
-        // replaces all non ascii chars to prevent a remote code execution
-        // THIS LINE OF CODE IS PERFECT DO NOT QUESTION IT
-        let tts = msg.match(/^[a-zA-Z0-9À-ž\-\. ]+\</g).join('');
-        let files = fs.readdirSync('audio');
-        if (files.length) {
-            let chosenFile = files[Math.floor(Math.random() * files.length)];
-            await exec(`aplay "audio/${chosenFile}"`);
+    if (topic === "hackeriet/space_state") {
+        if (!receivedPersistentSpaceStatus) {
+            receivedPersistentSpaceStatus = true;
+            return;
         }
-        exec(`espeak-ng -v nb "DingDong ${tts}"`);
+        if (msg === "OPEN") {
+            await exec(`aplay "sfx/space-open.wav"`)
+        } else {
+            await exec(`aplay "sfx/space-close.wav"`)
+        }
+    }
+    if (topic === "hackeriet/ding") {
+        //Splits the message at < as there is a encrypted ip adress passed along with the name in Brackets
+        //Replaces all non ascii chars to prevent a remote code execution
+        let tts = msg.split("<")[0].replace(/[^a-zA-Z ]/g, "")
+
+        //Passes the data to espeak-ng with a appended DingDong.
+
+        //Play a random file from audio folder
+        var files = fs.readdirSync('audio')
+        await exec('amixer sset PCM 100%')
+        if (files.length) {
+            let chosenFile = files[Math.floor(Math.random() * files.length)]
+            console.log(chosenFile)
+            await exec(`aplay "audio/${chosenFile}"`, () => {
+                exec(`espeak-ng -v nb "DingDong ${tts}"`)
+            })
+        } else {
+            //If no files found just tts
+            exec(`espeak-ng -v nb "DingDong ${tts}"`)
+        }
+
     }
 })
